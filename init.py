@@ -2,30 +2,8 @@ import streamlit as st
 import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
-
-# DATABASE
-
-con = sqlite3.connect("revisions.db")
-cur = con.cursor()
-
-cur.execute("""
-CREATE TABLE IF NOT EXISTS revisions(
-    device_name VARCHAR(5) NOT NULL,
-    service_date DATETIME NOT NULL,
-    tier INT NOT NULL,
-    project VARCHAR(45) NOT NULL,
-    building VARCHAR(45) NOT NULL,
-    state BOOLEAN NOT NULL,
-    technician VARCHAR(45) NOT NULL,
-    next_service DATETIME NULL,
-    location VARCHAR(45) NOT NULL,
-    ground_lead INT NULL,
-    isolation_resistance BOOLEAN NULL,
-    leakage_current INT NULL,
-    procesed BOOLEAN NULL,
-    PRIMARY KEY (device_name, service_date)
-)
-""")
+import base64
+from io import BytesIO
 
 # STREAMLIT
 
@@ -91,17 +69,25 @@ INSERT INTO revisions
 
 with st.sidebar:
     st.title('Export')
+    tier = st.segmented_control(
+        "Třída", ("I", "II"), default="I", key=1
+    )
 
-    with st.form("export"):
-        tier = st.segmented_control(
-            "Třída", ("I", "II"), default="I", key=1
-        )
-        technician = st.text_input("Jméno technika", placeholder="Nechte prázdné pro export všech")
-        
-        date_range = st.date_input(
-            "Časový rozsah",
-            (datetime.datetime.now() + relativedelta(months=-1), datetime.datetime.now()),
-            format="DD.MM.YYYY",
-        )
+    technician = st.text_input("Jméno technika", placeholder="Nechte prázdné pro export všech")
+    
+    date_range = st.date_input(
+        "Časový rozsah",
+        (datetime.datetime.now() + relativedelta(months=-1), datetime.datetime.now()),
+        format="DD.MM.YYYY",
+    )
 
-        submitted = st.form_submit_button("Stáhnout tabulku")
+    with open("./requirements.txt") as f:
+        data= f.read()
+
+    st.download_button(
+        label="Stáhnout tabulku",
+        data=data,
+        file_name="data.txt",
+        mime="text/plain",
+        icon=":material/download:",
+    )
