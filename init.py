@@ -2,8 +2,42 @@ import streamlit as st
 import datetime
 from dateutil.relativedelta import relativedelta
 import sqlite3
+import xlsxwriter
 import base64
-from io import BytesIO
+from io import BytesIO, StringIO
+import csv
+
+def create_table(technician, date_range, tier):
+    output = xlsxwriter.Workbook("revisions.xlsx")
+    worksheet = output.add_worksheet()
+    template = ("Projekt", "Budova", "Tag spotřebiče", "Název spotřebiče/zařízení", "Stav", "Uživatel", "Datum provedení revize", "Datum příští revize", "Umístění", "Aktivita", "Komentář", "Kód opravy", "Prohlídka", "Izolační odpor - sonda", "Náhradní unikající proud - sonda", "Ochranný vodič", "Izolační odpor", "Náhradní unikající proud")
+    for i,x in enumerate(template):
+        worksheet.write(0, i, x)
+    output.close()
+
+# DATABASE
+
+con = sqlite3.connect("revisions.db")
+cur = con.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS revisions(
+    device_name VARCHAR(5) NOT NULL,
+    service_date DATETIME NOT NULL,
+    tier INT NOT NULL,
+    project VARCHAR(45) NOT NULL,
+    building VARCHAR(45) NOT NULL,
+    state BOOLEAN NOT NULL,
+    technician VARCHAR(45) NOT NULL,
+    next_service DATETIME NULL,
+    location VARCHAR(45) NOT NULL,
+    ground_lead INT NULL,
+    isolation_resistance BOOLEAN NULL,
+    leakage_current INT NULL,
+    procesed BOOLEAN NULL,
+    PRIMARY KEY (device_name, service_date)
+)
+""")
 
 # STREAMLIT
 
@@ -33,7 +67,7 @@ with st.form("import"):
     )
 
     leakage_current = st.number_input("Náhradní unikající proud v mA")
-
+    ground_lead_current = None
     if tier == "I":
         ground_lead_current = st.number_input("Ochraný vodič v mA")
 
@@ -53,7 +87,7 @@ INSERT INTO revisions
         '{technician}',
         '{service_date + relativedelta(years=2)}',
         '{location}',
-        {ground_lead_current},
+        {ground_lead_current if ground_lead_current else 0},
         {int(isolation_resistance == "\>200MOhm")},
         {leakage_current},
         {int(False)}
@@ -66,6 +100,8 @@ INSERT INTO revisions
             if not device_name:
                 st.error('Pole: Identifikace spotřebiče, je prázdné')
     
+
+# print(f"SELECT WHERE tier IS {1 if tier == "I" else 2} AND WHERE service_date BETWEEN {date_range[0]} and {date_range[1] + relativedelta(days=1)}" + f" AND WHERE technician IS {technician}" if technician else "")
 
 with st.sidebar:
     st.title('Export')
@@ -81,13 +117,27 @@ with st.sidebar:
         format="DD.MM.YYYY",
     )
 
-    with open("./requirements.txt") as f:
-        data= f.read()
+    def create_csv_data(data_list):
+        # Convert data into CSV format
+        headers = [ascii("Projekt;Budova;Tag spotřebiče;Název spotřebiče/zařízení;Stav;Uživatel;Datum provedení revize;Datum příští revize;Umístění;Aktivita;Komentář;Kód opravy;Prohlídka;Izolační odpor - sonda;Náhradní unikající proud - sonda;Ochranný vodič;Izolační odpor;Náhradní unikající proud".encode("ascii", "replace"))]
+        rows = [";".join(map(str, row)) + "\n" for row in data_list]
+        return "".join(headers + rows)
+
+    count = cur.execute("SELECT COUNT(*) FROM revisions")
+
+    data = []
+
+    for row in range(int(count.fetchone()[0])):
+        data.append([row])
+            
+    st.write(cur.execute(f"SELECT WHERE tier IS {1 if tier == "I" else 2} AND WHERE service_date BETWEEN {date_range[0]} and {date_range[1] + relativedelta(days=1)}" + f" AND WHERE technician IS {technician}" if technician else ""))
 
     st.download_button(
         label="Stáhnout tabulku",
-        data=data,
-        file_name="data.txt",
-        mime="text/plain",
+        on_click=create_table(technician, date_range, tier),
+        data=create_csv_data(data),
+        file_name="data.csv",
+        mime="text/cvs",
         icon=":material/download:",
     )
+
