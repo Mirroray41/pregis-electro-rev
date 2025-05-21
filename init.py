@@ -21,6 +21,14 @@ con = sqlite3.connect("revisions.db")
 cur = con.cursor()
 
 cur.execute("""
+CREATE TABLE IF NOT EXISTS technicians (
+  idname VARCHAR(45) NOT NULL,
+  frendly_name VARCHAR(45) NOT NULL,
+  PRIMARY KEY (idname)
+)
+""")
+
+cur.execute("""
 CREATE TABLE IF NOT EXISTS revisions(
     device_name VARCHAR(5) NOT NULL,
     service_date DATETIME NOT NULL,
@@ -36,6 +44,7 @@ CREATE TABLE IF NOT EXISTS revisions(
     leakage_current INT NULL,
     procesed BOOLEAN NULL,
     PRIMARY KEY (device_name, service_date)
+    FOREIGN KEY (technician) REFERENCES technicians(idname)
 )
 """)
 
@@ -47,7 +56,9 @@ tier = st.segmented_control(
     "Třída", ("I", "II"), default="I", key=0
 )
 with st.form("import"):
-    technician = st.text_input("Jméno technika", placeholder="Př: NOVAKPE")
+    technicians = cur.execute("SELECT * FROM technicians").fetchall()
+    technician = st.selectbox("Výběr technika", [f"{i[1]} - {i[0]}" for i in technicians])
+
     device_name = st.text_input("Identifikace spotřebiče", placeholder="X0123")
     service_date = st.date_input("Datum servisu", datetime.datetime.now(), format="DD.MM.YYYY")
     service_time = st.time_input("Čas servisu", datetime.datetime.now())
@@ -74,7 +85,8 @@ with st.form("import"):
     submitted = st.form_submit_button("Vložit")
 
     if submitted:
-        if (technician and device_name):
+        technician = technician.split("-")[1].lstrip()
+        if device_name:
             command = f"""
 INSERT INTO revisions 
     VALUES (
@@ -95,13 +107,9 @@ INSERT INTO revisions
             cur.execute(command)
             con.commit()
         else:
-            if not technician:
-                st.error('Pole: Jméno technika, je prázdné')
-            if not device_name:
-                st.error('Pole: Identifikace spotřebiče, je prázdné')
+            st.error('Pole: Identifikace spotřebiče, je prázdné')
     
 
-# print(f"SELECT WHERE tier IS {1 if tier == "I" else 2} AND WHERE service_date BETWEEN {date_range[0]} and {date_range[1] + relativedelta(days=1)}" + f" AND WHERE technician IS {technician}" if technician else "")
 
 with st.sidebar:
     st.title('Export')
@@ -141,3 +149,4 @@ with st.sidebar:
         icon=":material/download:",
     )
 
+print(f"SELECT WHERE tier IS {1 if tier == "I" else 2} AND WHERE service_date BETWEEN {date_range[0]} and {date_range[1] + relativedelta(days=1)}" + f" AND WHERE technician IS {technician}" if technician else "")
