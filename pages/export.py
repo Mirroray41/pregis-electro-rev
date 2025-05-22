@@ -4,6 +4,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 from main import nav_bar
 import pandas as pd
+from io import BytesIO
 
 nav_bar()
 
@@ -25,6 +26,17 @@ date_range = st.date_input(
 )
 
 technician = technician.split("-")[1].lstrip()
+
+def create_excel_data(df):
+    """Convert DataFrame to Excel bytes with proper error handling"""
+    try:
+        output = BytesIO()
+        df.to_excel(output, index=False)
+        return output.getvalue()
+    except Exception as e:
+        st.error(f"Failed to convert DataFrame to Excel: {str(e)}")
+        return None
+
 
 df = pd.DataFrame(columns=[
     "Projekt", "Budova", "Tag spotřebiče", 
@@ -68,10 +80,15 @@ df = df.reset_index(drop=True)
 st.dataframe(df)
 
 
+if df.empty:
+    st.error("DataFrame is empty!")
+else:
+    excel_data = create_excel_data(df)
+
 st.download_button(
     label="Stáhnout tabulku",
-    data=df.to_csv(),
-    file_name="data.csv",
-    mime="text/cvs",
+    data=excel_data,
+    file_name="data.xlsx",
+    mime="application/vnd.openxmlformats-offenticated.spreadsheetml.sheet",
     icon=":material/download:",
 )
