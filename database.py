@@ -43,11 +43,17 @@ class Database(object):
     def get_all_technicians(self):
         return self.cur.execute("SELECT * FROM technicians").fetchall()
 
-    def get_filtered_revisions(self, tier, date_range, technician = None):
-        if len(date_range) > 1:
-            return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician)", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[1] + relativedelta(days=1), 'technician': technician}).fetchall()
+    def get_filtered_revisions(self, tier, date_range, technician, unprocesed):
+        if unprocesed: 
+            if len(date_range) > 1:
+                return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician) AND procesed = 0", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[1] + relativedelta(days=1), 'technician': technician}).fetchall()
+            else:
+                return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician) AND procesed = 0", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[0] + relativedelta(days=1), 'technician': technician}).fetchall()
         else:
-            return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician)", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[0] + relativedelta(days=1), 'technician': technician}).fetchall()
+            if len(date_range) > 1:
+                return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician)", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[1] + relativedelta(days=1), 'technician': technician}).fetchall()
+            else:
+                return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician)", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[0] + relativedelta(days=1), 'technician': technician}).fetchall()
 
 
     def get_latest_revisions(self, technician):
@@ -89,3 +95,8 @@ class Database(object):
             if i[0] != None and i[1] != None:
                 self.cur.execute("INSERT OR REPLACE INTO technicians VALUES (:idname, :friendlyname)", {'idname': i[0], 'friendlyname': i[1]})
                 self.con.commit()
+
+    def mark_as_completed(self, table):
+        for i in table:
+            self.cur.execute("UPDATE revisions SET procesed = 1 WHERE device_name = (:name) AND service_date = (:date)", {'name': i[3], 'date': i[6]})
+            self.con.commit()

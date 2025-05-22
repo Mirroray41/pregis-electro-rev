@@ -3,6 +3,7 @@ from database import Database
 import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
+import re
 
 st.set_page_config(initial_sidebar_state="collapsed")
 
@@ -34,8 +35,11 @@ def main():
 
     technicians = database.get_all_technicians()
     technician = st.selectbox("Výběr technika", [f"{i[1]} - {i[0]}" for i in technicians], key=5)
-
+    
     device_name = st.text_input("Identifikace spotřebiče", placeholder="X0123")
+
+    name_check = re.search("^[a-zA-Z]\d{4}$", device_name)
+
     with st.expander("Více možností"):
         service_date = st.date_input("Datum servisu", datetime.datetime.now(), format="DD.MM.YYYY")
         service_time = st.time_input("Čas servisu", datetime.datetime.now())
@@ -59,17 +63,18 @@ def main():
     if tier == "I":
         ground_lead_current = st.number_input("Ochraný vodič v mA")
 
-    submitted = st.button("Vložit")
+    submitted = st.button("Vložit", disabled= not name_check)
 
     technician = technician.split("-")[1].lstrip()
 
     if submitted:
-        if device_name:
+        if device_name and name_check:
             database.add_new_revision(device_name, service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current)
             st.success('Úspěšně přidáno')
         else:
-            st.error('Pole: Identifikace spotřebiče, je prázdné')
+            st.error('Pole: Identifikace spotřebiče, je prázdné nebo chybně zadané')
 
+    st.write("Ukázka tabulky")
 
     df = pd.DataFrame(columns=[
         "Projekt", "Budova", "Tag spotřebiče", 
