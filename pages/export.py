@@ -79,11 +79,7 @@ for i in data:
 df = df.reset_index(drop=True)
 st.dataframe(df)
 
-
-if df.empty:
-    st.error("DataFrame is empty!")
-else:
-    excel_data = create_excel_data(df)
+excel_data = create_excel_data(df)
 
 st.download_button(
     label="Stáhnout tabulku",
