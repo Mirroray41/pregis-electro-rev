@@ -44,23 +44,42 @@ class Database(object):
         return self.cur.execute("SELECT * FROM technicians").fetchall()
 
     def get_filtered_revisions(self, tier, date_range, technician = None):
-        return self.cur.execute(f"SELECT *  FROM revisions WHERE tier = {1 if tier == "I" else 2} AND service_date BETWEEN '{date_range[0]}' AND '{date_range[1] + relativedelta(days=1) if type(date_range)==tuple else date_range[0] + relativedelta(days=1)}'" + (f" AND technician = '{technician}'" if technician else "")).fetchall()
+        if len(date_range) > 1:
+            return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician)", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[1] + relativedelta(days=1), 'technician': technician}).fetchall()
+        else:
+            return self.cur.execute("SELECT *  FROM revisions WHERE tier = (:tier) AND service_date BETWEEN (:date_range_1) AND (:date_range_2) AND technician = (:technician)", {'tier': 1 if tier == "I" else 2, 'date_range_1': date_range[0], 'date_range_2': date_range[0] + relativedelta(days=1), 'technician': technician}).fetchall()
+
+
+    def get_latest_revisions(self, technician):
+        return self.cur.execute(f"SELECT *  FROM revisions WHERE technician = (:technician) ORDER BY service_date DESC LIMIT 10 ", {'technician': technician}).fetchall()
+
 
     def add_new_revision(self, device_name, service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current):
-        self.cur.execute(f"""
-        INSERT INTO revisions VALUES (
-            '{device_name}',
-            '{service_datetime.strftime("%Y-%m-%d-%H-%M")}',
-            {1 if tier == "I" else 2},
-            '{project}',
-            '{building}',
-            {int(state == "Vyhovuje")},
-            '{technician}',
-            '{service_datetime + relativedelta(years=2)}',
-            '{location}',
-            {ground_lead_current if ground_lead_current else 0},
-            {int(isolation_resistance == "&gt;200MOhm")},
-            {leakage_current},
-            {int(False)}
-        );""")
+        self.cur.execute(
+            """INSERT INTO revisions VALUES (
+                :device_name, 
+                :service_datetime, 
+                :tier, :project, 
+                :building, 
+                :state, 
+                :technician, 
+                :next_service, 
+                :location, 
+                :ground_lead_current, 
+                :isolation_resistance, 
+                :leakage_current, 
+                :procesed
+            )""", 
+            {'device_name': device_name, 
+                    'service_datetime': service_datetime.strftime("%Y-%m-%d-%H-%M"), 
+                    'tier': 1 if tier == "I" else 2, 'project': project, 'building': building, 
+                    'state': int(state == "Vyhovuje"), 
+                    'technician': technician, 
+                    'next_service': service_datetime + relativedelta(years=2), 
+                    'location': location, 
+                    'ground_lead_current': ground_lead_current if ground_lead_current else 0, 
+                    'isolation_resistance': int(isolation_resistance == "&gt;200MOhm"), 
+                    'leakage_current': leakage_current, 
+                    'procesed': int(False)
+            })
         self.con.commit()
