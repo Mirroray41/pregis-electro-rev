@@ -1,3 +1,13 @@
-# pregis-electro-rev
+# Evidence elektro revizí pro zařízení
 
-˙& C:/Users/hotar/AppData/Local/Programs/Python/Python313/python.exe -m streamlit run init.py˙
+### Jednoduchý program pro ukladání revizí a exportování tabulek do Sapu. 
+
+## Základní informace
+- Technologie: Streamlit sqlite
+- Jazyk: Python 3.13.3
+
+## Spuštění
+- `python -m streamlit run main.py`
+
+
+
