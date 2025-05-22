@@ -66,11 +66,11 @@ for i in data:
             "",                                                                                                         # Komentář
             "",                                                                                                         # Kód opravy
             "Vyhovuje" if (bool(i[5]) and float(i[11]) < 0.3 and bool(i[10]) and float(i[9]) < 3.5) else "Nevyhovuje",  # Prohlídka
-            f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje",                                # Izolační odpor - sonda
-            ">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje",                                              # Náhradní unikající proud - sonda
+            (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",    # Izolační odpor - sonda
+            (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                  # Náhradní unikající proud - sonda
             f"{i[9]}mA Vyhovuje" if float(i[9]) < 3.5 else  f"{i[9]}mA Nevyhovuje",                                     # Ochranný vodič
-            f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje",                                # Izolační odpor
-            ">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje",                                              # Náhradní unikající proud
+            (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",    # Izolační odpor
+            (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                  # Náhradní unikající proud
         ]
     ], columns=df.columns)
 

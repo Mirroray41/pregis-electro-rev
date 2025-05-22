@@ -83,3 +83,9 @@ class Database(object):
                     'procesed': int(False)
             })
         self.con.commit()
+
+    def edit_technicians(self, technicians):
+        for i in technicians:
+            if i[0] != None and i[1] != None:
+                self.cur.execute("INSERT OR REPLACE INTO technicians VALUES (:idname, :friendlyname)", {'idname': i[0], 'friendlyname': i[1]})
+                self.con.commit()
