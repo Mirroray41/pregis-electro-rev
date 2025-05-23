@@ -3,7 +3,7 @@
 ### Jednoduchý program pro ukladání revizí a exportování tabulek do Sapu. 
 
 ## Základní informace
-- Technologie: **Streamlit sqlite**
+- Technologie: **Streamlit, Sqlite**
 - Jazyk: **Python 3.13.3**
 
 ## Spuštění
