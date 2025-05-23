@@ -32,3 +32,4 @@ st.write()
 
 if safe:
     database.edit_technicians(edited_df.values.tolist())
+    st.success("Úspěšně upravena tabulka techniků")

@@ -60,9 +60,9 @@ class Database(object):
         return self.cur.execute(f"SELECT *  FROM revisions WHERE technician = (:technician) ORDER BY service_date DESC LIMIT 10 ", {'technician': technician}).fetchall()
 
 
-    def add_new_revision(self, device_name, service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current):
+    def add_new_revision(self, device_name, service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current, procesed):
         self.cur.execute(
-            """INSERT INTO revisions VALUES (
+            """INSERT OR REPLACE INTO revisions VALUES (
                 :device_name, 
                 :service_datetime, 
                 :tier, :project, 
@@ -77,23 +77,26 @@ class Database(object):
                 :procesed
             )""", 
             {'device_name': device_name, 
-                    'service_datetime': service_datetime.strftime("%Y-%m-%d-%H-%M"), 
-                    'tier': 1 if tier == "I" else 2, 'project': project, 'building': building, 
-                    'state': int(state == "Vyhovuje"), 
+                    'service_datetime': service_datetime, 
+                    'tier': tier, 
+                    'project': project, 
+                    'building': building, 
+                    'state': state, 
                     'technician': technician, 
                     'next_service': service_datetime + relativedelta(years=2), 
                     'location': location, 
                     'ground_lead_current': ground_lead_current if ground_lead_current else 0, 
-                    'isolation_resistance': int(isolation_resistance == "&gt;200MOhm"), 
+                    'isolation_resistance': isolation_resistance, 
                     'leakage_current': leakage_current, 
-                    'procesed': int(False)
+                    'procesed': procesed
             })
         self.con.commit()
 
     def edit_technicians(self, technicians):
+        self.cur.execute("DELETE FROM technicians")
         for i in technicians:
             if i[0] != None and i[1] != None:
-                self.cur.execute("INSERT OR REPLACE INTO technicians VALUES (:idname, :friendlyname)", {'idname': i[0], 'friendlyname': i[1]})
+                self.cur.execute("INSERT INTO technicians VALUES (:idname, :friendlyname)", {'idname': i[0], 'friendlyname': i[1]})
                 self.con.commit()
 
     def mark_as_completed(self, table):

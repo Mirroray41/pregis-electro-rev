@@ -43,7 +43,6 @@ def create_excel_data(df):
         return None
 
 def database_to_df():
-
     df = pd.DataFrame(columns=[
         "Projekt", "Budova", "Tag spotřebiče", 
         "Název spotřebiče/zařízení", "Stav", "Uživatel",
@@ -96,7 +95,9 @@ st.download_button(
     icon=":material/download:",
 )
 
-uploaded_file = st.file_uploader("Choose a file")
+st.markdown("-----")
+
+uploaded_file = st.file_uploader("Označit revize z tabulky za zpracované")
 
 if uploaded_file is not None:
 
@@ -108,5 +109,4 @@ if uploaded_file is not None:
         database.mark_as_completed(df.values.tolist())
         st.success("Uspěšně zpracováno")
         df = database_to_df()
-        table = st.dataframe(df)
 

@@ -43,7 +43,7 @@ def main():
     device_name = st.text_input("Identifikace spotřebiče", placeholder="X01234")
     
 
-    name_check = re.search("^[a-zA-Z]\d{4}$", device_name)
+    name_check = re.search(r"^[a-zA-Z]\d{4}$", device_name)
     
     
 
@@ -76,12 +76,14 @@ def main():
 
     if submitted:
         if device_name and name_check:
-            database.add_new_revision(device_name.upper(), service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current)
+            database.add_new_revision(device_name.upper(), service_datetime.strftime("%Y-%m-%d %H:%M:00"), 1 if tier == "I" else 2, project, building, int(state == "Vyhovuje"), technician, location, ground_lead_current, int(isolation_resistance == "&gt;200MOhm"), leakage_current, 0)
             st.success('Úspěšně přidáno')
         else:
             st.error('Pole: Identifikace spotřebiče, je prázdné nebo chybně zadané')
 
-    st.write("Ukázka tabulky")
+    st.markdown("-----")
+
+    st.write("Posledních 10 revizí")
 
     def database_to_df():
         
@@ -129,20 +131,31 @@ def main():
     df = database_to_df()
     st.dataframe(df)
 
-    uploaded_file = st.file_uploader("Vyber složku")
+    st.markdown("-----")
+
+    uploaded_file = st.file_uploader("Nahrát tabulku do databáze")
 
     if uploaded_file is not None:
-
         bytes_data = uploaded_file.getvalue()
 
         dataframe = pd.read_excel(uploaded_file)
         st.dataframe(dataframe)
-        if st.button("Označit za zpracované"):
-            database.mark_as_completed(df.values.tolist())
+        col1, col2 = st.columns(2)
+        with col1:
+            add = st.button("Přidat do databáze")
+        with col2:
+            add_and_mark = st.button("Přidat a označit za zpracované")
+        if add or add_and_mark:
+            for i in dataframe.values.tolist():
+                date_part, time_part = str(i[6]).split(" ")
+                date_part = date_part.split("-")
+                time_part = time_part.split(":")
+                service_date = datetime.datetime(year=int(date_part[0]), month=int(date_part[1]), day=int(date_part[2]), hour=int(time_part[0]), minute=int(time_part[1]), second=int(time_part[2]))
+                if str(i[15]) != "nan":
+                    database.add_new_revision(i[3], service_date, 2, i[0], i[1], i[4], i[5], i[8], float(i[15].split(" ")[0][:-2]), float(i[13].split(" ")[0][:-3]), int(i[14].split(" ")[1]=="Vyhovuje"), int(add_and_mark))
+                else:
+                    database.add_new_revision(i[3], service_date, 1, i[0], i[1], i[4], i[5], i[8], None, int(i[16].split(" ")[1]=="Vyhovuje"), float(i[17].split(" ")[0][:-3]), int(add_and_mark))
             st.success("Uspěšně zpracováno")
-            df = database_to_df()
-
-
 
 if __name__ == '__main__':
     main()
