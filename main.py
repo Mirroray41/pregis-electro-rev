@@ -22,6 +22,11 @@ def nav_bar():
         if st.button("Správa techniků"):
             st.switch_page("pages/manage.py")
 
+    logo_sidebar = 'img/logo_pregis.png'
+    main_body_logo = 'img/logo_pregis.png'
+
+    st.logo(logo_sidebar, icon_image=main_body_logo)
+
 def main():
     nav_bar()
 
@@ -35,10 +40,12 @@ def main():
 
     technicians = database.get_all_technicians()
     technician = st.selectbox("Výběr technika", [f"{i[1]} - {i[0]}" for i in technicians], key=5)
+    device_name = st.text_input("Identifikace spotřebiče", placeholder="X01234")
     
-    device_name = st.text_input("Identifikace spotřebiče", placeholder="X0123")
 
     name_check = re.search("^[a-zA-Z]\d{4}$", device_name)
+    
+    
 
     with st.expander("Více možností"):
         service_date = st.date_input("Datum servisu", datetime.datetime.now(), format="DD.MM.YYYY")
@@ -69,54 +76,73 @@ def main():
 
     if submitted:
         if device_name and name_check:
-            database.add_new_revision(device_name, service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current)
+            database.add_new_revision(device_name.upper(), service_datetime, tier, project, building, state, technician, location, ground_lead_current, isolation_resistance, leakage_current)
             st.success('Úspěšně přidáno')
         else:
             st.error('Pole: Identifikace spotřebiče, je prázdné nebo chybně zadané')
 
     st.write("Ukázka tabulky")
 
-    df = pd.DataFrame(columns=[
-        "Projekt", "Budova", "Tag spotřebiče", 
-        "Název spotřebiče/zařízení", "Stav", "Uživatel",
-        "Datum provedení revize", "Datum příští revize", 
-        "Umístění", "Aktivita", "Komentář", "Kód opravy",
-        "Prohlídka", "Izolační odpor - sonda", 
-        "Náhradní unikající proud - sonda", "Ochranný vodič",
-        "Izolační odpor", "Náhradní unikající proud"
-    ])
+    def database_to_df():
+        
+        df = pd.DataFrame(columns=[
+            "Projekt", "Budova", "Tag spotřebiče", 
+            "Název spotřebiče/zařízení", "Stav", "Uživatel",
+            "Datum provedení revize", "Datum příští revize", 
+            "Umístění", "Aktivita", "Komentář", "Kód opravy",
+            "Prohlídka", "Izolační odpor - sonda", 
+            "Náhradní unikající proud - sonda", "Ochranný vodič",
+            "Izolační odpor", "Náhradní unikající proud"
+        ])
 
 
-    data = database.get_latest_revisions(technician)
+        data = database.get_latest_revisions(technician)
 
-    for i in data:
-        new_row = pd.DataFrame([
-            [
-                i[3],                                                                                                       # Projekt
-                i[4],                                                                                                       # Budova
-                "",                                                                                                         # Tag spotřebiče
-                i[0],                                                                                                       # Název spotřebiče/zařízení
-                "Vyhovuje" if bool(i[5]) else "Nevyhovuje",                                                                 # Stav
-                i[6],                                                                                                       # Uživatel
-                i[1],                                                                                                       # Datum provedení revize
-                i[7],                                                                                                       # Datum příští revize
-                i[8],                                                                                                       # Umístění
-                "",                                                                                                         # Aktivita
-                "",                                                                                                         # Komentář
-                "",                                                                                                         # Kód opravy
-                "Vyhovuje" if (bool(i[5]) and float(i[11]) < 0.3 and bool(i[10]) and float(i[9]) < 3.5) else "Nevyhovuje",  # Prohlídka
-                (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",    # Izolační odpor - sonda
-                (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                  # Náhradní unikající proud - sonda
-                f"{i[9]}mA Vyhovuje" if float(i[9]) < 3.5 else  f"{i[9]}mA Nevyhovuje",                                     # Ochranný vodič
-                (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",    # Izolační odpor
-                (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                  # Náhradní unikající proud
-            ]
-        ], columns=df.columns)
+        for i in data:
+            new_row = pd.DataFrame([
+                [
+                    i[3],                                                                                                       # Projekt
+                    i[4],                                                                                                       # Budova
+                    "",                                                                                                         # Tag spotřebiče
+                    i[0],                                                                                                       # Název spotřebiče/zařízení
+                    "Vyhovuje" if bool(i[5]) else "Nevyhovuje",                                                                 # Stav
+                    i[6],                                                                                                       # Uživatel
+                    i[1],                                                                                                       # Datum provedení revize
+                    i[7],                                                                                                       # Datum příští revize
+                    i[8],                                                                                                       # Umístění
+                    "",                                                                                                         # Aktivita
+                    "",                                                                                                         # Komentář
+                    "",                                                                                                         # Kód opravy
+                    "Vyhovuje" if (bool(i[5]) and float(i[11]) < 0.3 and bool(i[10]) and float(i[9]) < 3.5) else "Nevyhovuje",  # Prohlídka
+                    (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",    # Izolační odpor - sonda
+                    (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                  # Náhradní unikající proud - sonda
+                    f"{i[9]}mA Vyhovuje" if float(i[9]) < 3.5 else  f"{i[9]}mA Nevyhovuje",                                     # Ochranný vodič
+                    (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",    # Izolační odpor
+                    (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                  # Náhradní unikající proud
+                ]
+            ], columns=df.columns)
 
-        df = pd.concat([df, new_row])
-
-    df = df.reset_index(drop=True)
+            df = pd.concat([df, new_row])
+            
+        return df.reset_index(drop=True)
+       
+    df = database_to_df()
     st.dataframe(df)
+
+    uploaded_file = st.file_uploader("Vyber složku")
+
+    if uploaded_file is not None:
+
+        bytes_data = uploaded_file.getvalue()
+
+        dataframe = pd.read_excel(uploaded_file)
+        st.dataframe(dataframe)
+        if st.button("Označit za zpracované"):
+            database.mark_as_completed(df.values.tolist())
+            st.success("Uspěšně zpracováno")
+            df = database_to_df()
+
+
 
 if __name__ == '__main__':
     main()
