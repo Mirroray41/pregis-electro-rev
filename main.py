@@ -72,8 +72,11 @@ def main():
 
     submitted = st.button("Vložit", disabled= not name_check)
 
-    technician = technician.split("-")[1].lstrip()
-
+    try:
+        technician = technician.split("-")[1].lstrip()
+    except AttributeError:
+        st.error("Nejdříve musíte přidat alespoň jednoho technika")
+    
     if submitted:
         if device_name and name_check:
             database.add_new_revision(device_name.upper(), service_datetime.strftime("%Y-%m-%d %H:%M:00"), 1 if tier == "I" else 2, project, building, int(state == "Vyhovuje"), technician, location, ground_lead_current, int(isolation_resistance == "&gt;200MOhm"), leakage_current, 0)
