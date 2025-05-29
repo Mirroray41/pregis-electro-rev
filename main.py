@@ -70,7 +70,7 @@ def main():
     if tier == "I":
         ground_lead_current = st.number_input("Ochraný vodič v mA")
 
-    submitted = st.button("Vložit", disabled= not name_check)
+    submitted = st.button("Vložit", disabled= ((not name_check) and (isolation_resistance==None or state==None)))
 
     try:
         technician = technician.split("-")[1].lstrip()
