@@ -57,24 +57,24 @@ def database_to_df():
     for i in data:
         new_row = pd.DataFrame([
             [
-                i[3],                                                                                                       # Projekt
-                i[4],                                                                                                       # Budova
-                "",                                                                                                         # Tag spotřebiče
-                i[0],                                                                                                       # Název spotřebiče/zařízení
-                "Vyhovuje" if bool(i[5]) else "Nevyhovuje",                                                                 # Stav
-                i[6],                                                                                                       # Uživatel
-                i[1],                                                                                                       # Datum provedení revize
-                i[7],                                                                                                       # Datum příští revize
-                i[8],                                                                                                       # Umístění
-                "",                                                                                                         # Aktivita
-                "",                                                                                                         # Komentář
-                "",                                                                                                         # Kód opravy
-                "Vyhovuje" if (bool(i[5]) and float(i[11]) < 0.3 and bool(i[10]) and float(i[9]) < 3.5) else "Nevyhovuje",  # Prohlídka
-                (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",    # Izolační odpor - sonda
-                (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                  # Náhradní unikající proud - sonda
-                f"{i[9]}mA Vyhovuje" if float(i[9]) < 3.5 else  f"{i[9]}mA Nevyhovuje",                                     # Ochranný vodič
-                (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",    # Izolační odpor
-                (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                  # Náhradní unikající proud
+                i[3],                                                                                                                                                                           # Projekt
+                i[4],                                                                                                                                                                           # Budova
+                "",                                                                                                                                                                             # Tag spotřebiče
+                i[0],                                                                                                                                                                           # Název spotřebiče/zařízení
+                "Vyhovuje" if bool(i[5]) else "Nevyhovuje",                                                                                                                                     # Stav
+                i[6],                                                                                                                                                                           # Uživatel
+                i[1],                                                                                                                                                                           # Datum provedení revize
+                i[7],                                                                                                                                                                           # Datum příští revize
+                i[8],                                                                                                                                                                           # Umístění
+                "",                                                                                                                                                                             # Aktivita
+                "",                                                                                                                                                                             # Komentář
+                "",                                                                                                                                                                             # Kód opravy
+                "Vyhovuje" if (bool(i[5]) and float(i[11]) < settings.get("leakage_current_max") and bool(i[10]) and float(i[9]) < settings.get("ground_lead_current_max")) else "Nevyhovuje",  # Prohlídka
+                (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < settings.get("leakage_current_max") else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",                                        # Izolační odpor - sonda
+                (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                                                                                      # Náhradní unikající proud - sonda
+                f"{i[9]}mA Vyhovuje" if float(i[9]) < settings.get("ground_lead_current_max") else  f"{i[9]}mA Nevyhovuje",                                                                     # Ochranný vodič
+                (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < settings.get("leakage_current_max") else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",                                        # Izolační odpor
+                (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                                                                                      # Náhradní unikající proud
             ]
         ], columns=df.columns)
 

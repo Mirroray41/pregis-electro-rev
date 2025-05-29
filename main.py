@@ -4,6 +4,7 @@ import datetime
 from dateutil.relativedelta import relativedelta
 import pandas as pd
 import re
+import yaml
 
 st.set_page_config(initial_sidebar_state="collapsed")
 
@@ -31,6 +32,9 @@ def main():
     nav_bar()
 
     database = Database()
+
+    with open('settings.yml', 'r') as f:
+        settings = yaml.load(f, Loader=yaml.SafeLoader)
 
     st.title('Import')
 
@@ -61,14 +65,15 @@ def main():
         "Stav", ("Vyhovuje", "Nevyhovuje"), default="Vyhovuje", key=2
     )
 
+    leakage_current = st.number_input(f"Náhradní unikající proud v mA (Přechodový), max: {settings.get("leakage_current_max")}mA")
+
     isolation_resistance = st.segmented_control(
-        "Izolační odpor", ("<200MOhm", "&gt;200MOhm"), default="&gt;200MOhm"
+        f"Izolační odpor, min: {settings.get("isolation_resistance_min")}MOhm", ("<200MOhm", "&gt;200MOhm"), default="&gt;200MOhm"
     )
 
-    leakage_current = st.number_input("Náhradní unikající proud v mA")
     ground_lead_current = None
     if tier == "I":
-        ground_lead_current = st.number_input("Ochraný vodič v mA")
+        ground_lead_current = st.number_input(f"Ochraný vodič v mA (Proud ochranou), max: {settings.get("ground_lead_current_max")}mA")
 
     submitted = st.button("Vložit", disabled= ((not name_check) and (isolation_resistance==None or state==None)))
 
@@ -79,7 +84,7 @@ def main():
     
     if submitted:
         if device_name and name_check:
-            database.add_new_revision(device_name.upper(), service_datetime.strftime("%Y-%m-%d %H:%M:00"), 1 if tier == "I" else 2, project, building, int(state == "Vyhovuje"), technician, location, ground_lead_current, int(isolation_resistance == "&gt;200MOhm"), leakage_current, 0)
+            database.add_new_revision(device_name.upper(), service_datetime.date(), 1 if tier == "I" else 2, project, building, int(state == "Vyhovuje"), technician, location, ground_lead_current, int(isolation_resistance == "&gt;200MOhm"), leakage_current, 0)
             st.success('Úspěšně přidáno')
         else:
             st.error('Pole: Identifikace spotřebiče, je prázdné nebo chybně zadané')
@@ -106,24 +111,24 @@ def main():
         for i in data:
             new_row = pd.DataFrame([
                 [
-                    i[3],                                                                                                       # Projekt
-                    i[4],                                                                                                       # Budova
-                    "",                                                                                                         # Tag spotřebiče
-                    i[0],                                                                                                       # Název spotřebiče/zařízení
-                    "Vyhovuje" if bool(i[5]) else "Nevyhovuje",                                                                 # Stav
-                    i[6],                                                                                                       # Uživatel
-                    i[1],                                                                                                       # Datum provedení revize
-                    i[7],                                                                                                       # Datum příští revize
-                    i[8],                                                                                                       # Umístění
-                    "",                                                                                                         # Aktivita
-                    "",                                                                                                         # Komentář
-                    "",                                                                                                         # Kód opravy
-                    "Vyhovuje" if (bool(i[5]) and float(i[11]) < 0.3 and bool(i[10]) and float(i[9]) < 3.5) else "Nevyhovuje",  # Prohlídka
-                    (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",    # Izolační odpor - sonda
-                    (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                  # Náhradní unikající proud - sonda
-                    f"{i[9]}mA Vyhovuje" if float(i[9]) < 3.5 else  f"{i[9]}mA Nevyhovuje",                                     # Ochranný vodič
-                    (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < 0.3 else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",    # Izolační odpor
-                    (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                  # Náhradní unikající proud
+                    i[3],                                                                                                                                                                           # Projekt
+                    i[4],                                                                                                                                                                           # Budova
+                    "",                                                                                                                                                                             # Tag spotřebiče
+                    i[0],                                                                                                                                                                           # Název spotřebiče/zařízení
+                    "Vyhovuje" if bool(i[5]) else "Nevyhovuje",                                                                                                                                     # Stav
+                    i[6],                                                                                                                                                                           # Uživatel
+                    i[1],                                                                                                                                                                           # Datum provedení revize
+                    i[7],                                                                                                                                                                           # Datum příští revize
+                    i[8],                                                                                                                                                                           # Umístění
+                    "",                                                                                                                                                                             # Aktivita
+                    "",                                                                                                                                                                             # Komentář
+                    "",                                                                                                                                                                             # Kód opravy
+                    "Vyhovuje" if (bool(i[5]) and float(i[11]) < settings.get("leakage_current_max") and bool(i[10]) and float(i[9]) < settings.get("ground_lead_current_max")) else "Nevyhovuje",  # Prohlídka
+                    (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < settings.get("leakage_current_max") else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 1 else "",                                        # Izolační odpor - sonda
+                    (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 1 else "",                                                                                      # Náhradní unikající proud - sonda
+                    f"{i[9]}mA Vyhovuje" if float(i[9]) < settings.get("ground_lead_current_max") else  f"{i[9]}mA Nevyhovuje",                                                                     # Ochranný vodič
+                    (f"{i[11]}Ohm Vyhovuje" if float(i[11]) < settings.get("leakage_current_max") else  f"{i[11]}Ohm Nevyhovuje") if int(i[2]) == 2 else "",                                        # Izolační odpor
+                    (">200MOhm Vyhovuje" if bool(i[10]) else "<200MOhm Nevyhovuje") if int(i[2]) == 2 else "",                                                                                      # Náhradní unikající proud
                 ]
             ], columns=df.columns)
 

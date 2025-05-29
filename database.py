@@ -2,6 +2,7 @@ import streamlit as st
 import sqlite3
 import datetime
 from dateutil.relativedelta import relativedelta
+import datetime
 
 class Database(object):
     def __new__(cls):
@@ -77,7 +78,7 @@ class Database(object):
                 :procesed
             )""", 
             {'device_name': device_name, 
-                    'service_datetime': service_datetime, 
+                    'service_datetime': service_datetime.strftime("%Y-%m-%d %H:%M:00"), 
                     'tier': tier, 
                     'project': project, 
                     'building': building, 

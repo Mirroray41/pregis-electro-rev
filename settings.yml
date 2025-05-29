@@ -1,0 +1,3 @@
+leakage_current_max: 0.3
+isolation_resistance_min: 5
+ground_lead_current_max: 3.5
